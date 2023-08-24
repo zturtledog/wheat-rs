@@ -1,0 +1,73 @@
+fn advtoken(file: &String, rule: &Pattern, off: usize) -> Option<Vec<Token>> {
+        let mut end = 0;
+        let mut tkns: Vec<Token> = vec![];
+
+        if rule.exp.is_match(file) {
+        rule.exp.find_iter(file).for_each(|mat| {
+            let start = &file[end..mat.start()];
+            let middle = mat.as_str();
+            
+            if start == "" {
+                tkns.push(Token::new(end+off, "unsear".to_string(), start.to_string()));
+            }
+            tkns.push(Token::new(mat.start()+off, rule.name.clone(), middle.to_string()));
+            
+            end = mat.end();
+        });} else {
+            tkns.push(Token::new(off, "unsear".to_string(), file.to_string()))
+        }
+
+        if tkns.is_empty() {return None};
+        
+        Some(tkns)
+    }
+
+    fn advtoken_recurse(file: &String, rule: &Pattern) -> Option<Vec<Token>> {
+        // find
+        // split 
+        // recurse
+        
+        if file == "" {return None}
+
+        let mut current : Vec<Token> = vec![];
+        let find = rule.exp.find(file);
+        if find.is_some() {
+            let start = advtoken(&file[0..(find.unwrap().start())].to_string(),rule,0);
+            let middle = find.unwrap().as_str();
+            let end = advtoken(&file[(find.unwrap().end())..file.len()].to_string(),rule,0);
+
+            if start.is_some() {
+                current.append(&mut start.unwrap())
+            }
+            current.push(Token { offset:find.unwrap().start(), tpe: rule.name.clone(), value: middle.to_string()});
+            if end.is_some() {
+                current.append(&mut end.unwrap())
+            }
+
+            return Some(current);
+        }
+
+        current.push(Token {offset:0, tpe: "unsear".to_string(), value: file.to_string()});
+
+        return Some(current);
+    }
+
+
+//adv tokens works? but this doesn't
+        let mut tkns = vec![Token::new(0, "unsear".to_string(), file)];
+        mat.iter().for_each(|pat| {
+            let mut temp:Vec<Token> = vec![];
+            tkns.iter().for_each(|tkn| {
+                if tkn.tpe == "unsear".to_string() {
+                    let adv = advtoken(&tkn.value, &pat, tkn.offset);
+                    // println!("{:?}",adv);
+                    if adv.is_some() {
+                        temp = adv.unwrap()
+                    }
+                } else {
+                    temp.push(tkn.dup());
+                }
+            });
+            tkns = temp
+        });
+        println!("{:?}",tkns);

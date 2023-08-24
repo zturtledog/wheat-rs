@@ -1,0 +1,9 @@
+23 tt .const
+
+{
+    {
+        "Hello, World" .print
+    } .swap i .loop
+} (:number:) hwad .function
+
+tt .hwad
