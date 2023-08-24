@@ -40,7 +40,7 @@ pub mod wheat {
         exp: Regex,
     }
 
-    pub fn load(path: String) -> Option<Tofi> {
+    pub fn load(path: String) -> Tofi {
         let mat = vec![
             // npat("comment", "#.*?(#|$)"),//[#](?:\\\\[#\\\\]|[^\\n#\\\\])*[#|\\n]
             npat(Tktype::STRING, "['](?:\\\\['\\\\]|[^\\n'\\\\])*[']"),
@@ -77,7 +77,7 @@ pub mod wheat {
             npat(Tktype::NEWLINE, "\r?\n"),
         ];
 
-        let file = fs::read_to_string(path).unwrap();
+        let file = fs::read_to_string(&path).unwrap();
         let mut tkns = vec![Token::new(0, Tktype::UNSEAR, &file)];
         mat.iter().for_each(|pat| {
             let mut temp: Vec<Token> = vec![];
@@ -96,9 +96,12 @@ pub mod wheat {
             tkns = temp;
         });
 
-        dumptokens(tkns,!true);
+        dumptokens(&tkns,!true);
 
-        return None;
+        Tofi {
+            tokens:tkns,
+            src:path
+        }
     }
 
     fn npat<'a>(name: Tktype, exp: &'a str) -> Pattern {
@@ -164,7 +167,7 @@ pub mod wheat {
         }
     }
 
-    fn dumptokens(tkns: Vec<Token>, indx: bool) {
+    fn dumptokens(tkns: &Vec<Token>, indx: bool) {
         print!("\n");
         tkns.iter().for_each(|token| {
             if indx {
