@@ -1,4 +1,4 @@
-23 tt .const
+22 tt .const # declare variable
 
 {
     {
@@ -6,4 +6,7 @@
     } .swap i .loop
 } (:number:) hwad .function
 
-tt .hwad
+~tt++
+tt .hwad # call function
+
+"
