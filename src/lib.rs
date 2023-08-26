@@ -118,8 +118,8 @@ pub mod wheat {
     pub fn load(path: String) -> Tofi {
         let mat: Vec<Pattern> = vec![
             // npat("comment", "#.*?(#|$)"),//[#](?:\\\\[#\\\\]|[^\\n#\\\\])*[#|\\n]
+            npat(Tktype::STRING, "\"((\\\\[^ \n\r])|[^\"])*?\""),//"\"(\\\\[\"\\\\]|[^\"\\\\]|\\r?\\n)*\""),//"[\"](?:\\\\[\"\\\\]|[^\\n\"\\\\])*[\"]"),
             npat(Tktype::STRING, "['](?:\\\\['\\\\]|[^\\n'\\\\])*[']"),
-            npat(Tktype::STRING, "[\"](?:\\\\[\"\\\\]|[^\\n\"\\\\])*[\"]"),
             npat(Tktype::NEWLINE, "\r?\n"),
             npat(Tktype::TYPE, ":[a-zA-Z_]+:"),
             npat(Tktype::NUMBER, "-?(?:0|[1-9][0-9]*)\\.?(?:0|[1-9][0-9]*)?"),
@@ -180,6 +180,7 @@ pub mod wheat {
 
         let mut instring = false;
         let mut incomment = false;
+        let mut multicom = false;
 
         let code = data.as_bytes();
 
@@ -194,9 +195,16 @@ pub mod wheat {
             }
             let curr = code[(i as usize)] as char;
 
-            if (curr == '\'' || curr == '"') && !(p1 == '\\' && p2 != '\\') && !incomment {
+            if (curr == '\'' || curr == '"') && !(p1 == '\\' && p2 != '\\') && !(incomment || multicom) {
                 instring = !instring;
-            } else if curr == '#' && !instring {
+            } else if ((curr == '#' && p1 == '-') && ! incomment) && !instring {
+                multicom = ! multicom;
+                record.pop();
+                record.push(' ');
+                record.push(' ');
+                continue;
+            }
+            else if (curr == '#' && ! multicom) && !instring {
                 incomment = !incomment;
                 record.push(' ');
                 continue;
@@ -204,10 +212,10 @@ pub mod wheat {
                 incomment = false;
             }
 
-            if !incomment {
-                record.push(curr);
-            } else {
+            if incomment || multicom {
                 record.push(' ');
+            } else {
+                record.push(curr);
             }
         }
 
@@ -258,11 +266,13 @@ pub mod wheat {
         let mut colrec: usize = 0;
         let mut depth = 0;
         tkns.iter().for_each(|tks| {
-            temp.push(Node::new_str(line, tks.offset, tks.dup()));
+            temp.push(Node::new_str(line, colrec, tks.dup()));
+
+            colrec += tks.value.len();
 
             match &tks.tpe {
                 Tktype::NEWLINE => {
-                    coltrack += colrec;
+                    colrec = 0;
                     line += 1
                 },
                 Tktype::SPECIAL(id) => {
@@ -280,9 +290,7 @@ pub mod wheat {
                     temp[indx].is_block = true;
                 },
                 _=>{}
-            } 
-            colrec += tks.value.len();
-
+            }
         });
 
         temp.iter().for_each(|f| {
